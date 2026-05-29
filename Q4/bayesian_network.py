@@ -1,159 +1,226 @@
-# Bayesian network example for medical diagnosis
+class BayesianNetwork:
 
-try:
-    from pgmpy.models import DiscreteBayesianNetwork as BayesianNetwork
-except ImportError:
-    from pgmpy.models import BayesianNetwork
+    def __init__(self):
 
-from pgmpy.factors.discrete import TabularCPD
-from pgmpy.inference import VariableElimination
-
-
-# building the bayesian network
-def build_model():
-    model = BayesianNetwork([
-        ("Flu", "Fever"),
-        ("Flu", "Cough"),
-        ("Covid", "Fever"),
-        ("Covid", "Cough"),
-        ("Covid", "BreathingProblem")
-    ])
-
-    cpd_flu = TabularCPD(
-        variable="Flu",
-        variable_card=2,
-        values=[
-            [0.70],
-            [0.30]
-        ]
-    )
-
-    cpd_covid = TabularCPD(
-        variable="Covid",
-        variable_card=2,
-        values=[
-            [0.85],
-            [0.15]
-        ]
-    )
-
-    cpd_fever = TabularCPD(
-        variable="Fever",
-        variable_card=2,
-        values=[
-            [0.95, 0.40, 0.30, 0.10],
-            [0.05, 0.60, 0.70, 0.90]
-        ],
-        evidence=["Flu", "Covid"],
-        evidence_card=[2, 2]
-    )
-
-    cpd_cough = TabularCPD(
-        variable="Cough",
-        variable_card=2,
-        values=[
-            [0.90, 0.35, 0.40, 0.15],
-            [0.10, 0.65, 0.60, 0.85]
-        ],
-        evidence=["Flu", "Covid"],
-        evidence_card=[2, 2]
-    )
-
-    cpd_breathing = TabularCPD(
-        variable="BreathingProblem",
-        variable_card=2,
-        values=[
-            [0.90, 0.30],
-            [0.10, 0.70]
-        ],
-        evidence=["Covid"],
-        evidence_card=[2]
-    )
-
-    model.add_cpds(
-        cpd_flu,
-        cpd_covid,
-        cpd_fever,
-        cpd_cough,
-        cpd_breathing
-    )
-
-    return model
-
-
-# printing probability result
-def print_probability(result, variable_name):
-    print("\nProbability of", variable_name)
-    print("No :", round(result.values[0], 4))
-    print("Yes:", round(result.values[1], 4))
-
-
-def main():
-    model = build_model()
-
-    if model.check_model():
-        print("Bayesian Network model created successfully.")
-    else:
-        print("Model has some error.")
-        return
-
-    inference = VariableElimination(model)
-
-    print("\nNodes in the network:")
-    print(list(model.nodes()))
-
-    print("\nEdges in the network:")
-    print(list(model.edges()))
-
-    # test case 1
-    result1 = inference.query(
-        variables=["Flu"],
-        evidence={"Fever": 1, "Cough": 1}
-    )
-    print_probability(result1, "Flu given Fever and Cough")
-
-    # test case 2
-    result2 = inference.query(
-        variables=["Covid"],
-        evidence={
-            "Fever": 1,
-            "Cough": 1,
-            "BreathingProblem": 1
+        self.P_Burglary = {
+            True: 0.001,
+            False: 0.999
         }
-    )
-    print_probability(
-        result2,
-        "Covid given Fever, Cough and Breathing Problem"
-    )
 
-    # test case 3
-    result3 = inference.query(
-        variables=["Covid"],
-        evidence={"BreathingProblem": 1}
-    )
-    print_probability(result3, "Covid given Breathing Problem")
+        self.P_Earthquake = {
+            True: 0.002,
+            False: 0.998
+        }
 
-    # test case 4
-    result4 = inference.query(
-        variables=["Flu"],
-        evidence={"Fever": 1}
-    )
-    print_probability(result4, "Flu given Fever")
+        self.P_Alarm = {
+            (True, True): 0.95,
+            (True, False): 0.94,
+            (False, True): 0.29,
+            (False, False): 0.001
+        }
 
-    # test case 5
-    result5 = inference.query(
-        variables=["Covid"],
-        evidence={"Fever": 1}
-    )
-    print_probability(result5, "Covid given Fever")
+        self.P_JohnCalls = {
+            True: 0.90,
+            False: 0.05
+        }
 
-    # test case 6
-    result6 = inference.query(
-        variables=["Cough"],
-        evidence={"Covid": 1}
-    )
-    print_probability(result6, "Cough given Covid")
+        self.P_MaryCalls = {
+            True: 0.70,
+            False: 0.01
+        }
+
+    def show_network(self):
+
+        print("\nBAYESIAN NETWORK STRUCTURE\n")
+
+        print("Burglary ------>")
+        print("                  Alarm ------> JohnCalls")
+        print("Earthquake ---->")
+        print("                  Alarm ------> MaryCalls")
+
+    def display_probabilities(self):
+
+        print("\nPRIOR PROBABILITIES\n")
+
+        print("P(Burglary=True)  =", self.P_Burglary[True])
+        print("P(Burglary=False) =", self.P_Burglary[False])
+
+        print("\nP(Earthquake=True)  =", self.P_Earthquake[True])
+        print("P(Earthquake=False) =", self.P_Earthquake[False])
+
+    def calculate_joint_probability(
+            self,
+            burglary,
+            earthquake):
+
+        p_b = self.P_Burglary[burglary]
+        p_e = self.P_Earthquake[earthquake]
+
+        p_a = self.P_Alarm[
+            (burglary, earthquake)
+        ]
+
+        p_j = self.P_JohnCalls[True]
+        p_m = self.P_MaryCalls[True]
+
+        joint = (
+            p_b *
+            p_e *
+            p_a *
+            p_j *
+            p_m
+        )
+
+        return joint
+
+    def show_joint_table(self):
+
+        print("\nJOINT PROBABILITY TABLE\n")
+
+        cases = [
+            (True, True),
+            (True, False),
+            (False, True),
+            (False, False)
+        ]
+
+        for burglary, earthquake in cases:
+
+            probability = self.calculate_joint_probability(
+                burglary,
+                earthquake
+            )
+
+            print(
+                "Burglary =",
+                burglary,
+                " Earthquake =",
+                earthquake,
+                " Joint Probability =",
+                round(probability, 8)
+            )
+
+    def probability_of_alarm(self):
+
+        total = 0
+
+        cases = [
+            (True, True),
+            (True, False),
+            (False, True),
+            (False, False)
+        ]
+
+        for burglary, earthquake in cases:
+
+            total += (
+                self.P_Burglary[burglary]
+                *
+                self.P_Earthquake[earthquake]
+                *
+                self.P_Alarm[
+                    (burglary, earthquake)
+                ]
+            )
+
+        return total
+
+    def probability_of_burglary_given_calls(self):
+
+        numerator = 0
+        denominator = 0
+
+        cases = [
+            (True, True),
+            (True, False),
+            (False, True),
+            (False, False)
+        ]
+
+        for burglary, earthquake in cases:
+
+            joint = self.calculate_joint_probability(
+                burglary,
+                earthquake
+            )
+
+            denominator += joint
+
+            if burglary:
+                numerator += joint
+
+        return numerator / denominator
+
+    def probability_of_earthquake_given_calls(self):
+
+        numerator = 0
+        denominator = 0
+
+        cases = [
+            (True, True),
+            (True, False),
+            (False, True),
+            (False, False)
+        ]
+
+        for burglary, earthquake in cases:
+
+            joint = self.calculate_joint_probability(
+                burglary,
+                earthquake
+            )
+
+            denominator += joint
+
+            if earthquake:
+                numerator += joint
+
+        return numerator / denominator
+
+    def inference_report(self):
+
+        print("\nINFERENCE RESULTS\n")
+
+        alarm_probability = self.probability_of_alarm()
+
+        print(
+            "Probability of Alarm =",
+            round(alarm_probability, 6)
+        )
+
+        burglary_probability = (
+            self.probability_of_burglary_given_calls()
+        )
+
+        print(
+            "Probability of Burglary given JohnCalls and MaryCalls =",
+            round(burglary_probability, 6)
+        )
+
+        earthquake_probability = (
+            self.probability_of_earthquake_given_calls()
+        )
+
+        print(
+            "Probability of Earthquake given JohnCalls and MaryCalls =",
+            round(earthquake_probability, 6)
+        )
 
 
-if __name__ == "__main__":
-    main()
+bn = BayesianNetwork()
+
+print("\n====================================")
+print(" BAYESIAN NETWORK IMPLEMENTATION ")
+print("====================================")
+
+bn.show_network()
+
+bn.display_probabilities()
+
+bn.show_joint_table()
+
+bn.inference_report()
+
+print("\n====================================")
+print(" EXECUTION COMPLETED ")
+print("====================================")
